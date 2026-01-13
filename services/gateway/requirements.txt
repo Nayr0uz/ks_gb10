@@ -1,0 +1,14 @@
+fastapi==0.111.0
+starlette==0.37.2
+uvicorn[standard]==0.24.0.post1
+requests==2.31.0
+httpx==0.25.2
+redis==5.0.1
+pydantic==2.9.0
+python-dotenv==1.0.0
+python-multipart==0.0.7
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+SQLAlchemy>=1.4,<1.5
+sqlalchemy-file==0.2.0
+pgvector==0.4.1

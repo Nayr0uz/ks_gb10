@@ -1,0 +1,178 @@
+services:
+  # NOTE: LLM inference is running on GB10 machine via Ollama
+  # No Docker container needed - using remote Ollama at http://172.24.77.77:11434
+
+  neo4j:
+    image: neo4j:latest
+    container_name: enbd_neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/enbd_password
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+      - "7473:7473"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_init_cypher:/init
+    networks:
+      - enbd_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "enbd_password", "RETURN 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: enbd_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - enbd_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  ingestion-service:
+    build:
+      context: .
+      dockerfile: ./services/ingestion/Dockerfile
+    container_name: enbd_ingestion
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - DATABASE_URL=neo4j://neo4j:enbd_password@neo4j:7687
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - enbd_network
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: ./services/chat/Dockerfile
+    container_name: enbd_chat
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - DATABASE_URL=neo4j://neo4j:enbd_password@neo4j:7687
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8001:8001"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - enbd_network
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./services/auth/Dockerfile
+    container_name: enbd_auth
+    env_file: .env
+    environment:
+      - DATABASE_URL=neo4j://neo4j:enbd_password@neo4j:7687
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "8002:8002"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - enbd_network
+
+  presentation-service:
+    build:
+      context: .
+      dockerfile: ./services/presentation/Dockerfile
+    container_name: enbd_presentation
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - DATABASE_URL=neo4j://neo4j:enbd_password@neo4j:7687
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PRESENTATION_PUBLIC_BASE=http://presentation-service:8003
+    ports:
+      - "8003:8003"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - enbd_network
+    volumes:
+      - saved_presentations:/app/saved_presentations
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./services/gateway/Dockerfile
+    container_name: enbd_gateway
+    env_file: .env
+    environment:
+      - INGESTION_SERVICE_URL=http://ingestion-service:8000
+      - CHAT_SERVICE_URL=http://chat-service:8001
+      - AUTH_SERVICE_URL=http://auth-service:8002
+      - PRESENTATION_SERVICE_URL=http://presentation-service:8003
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      ingestion-service:
+        condition: service_started
+      chat-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      presentation-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - enbd_network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:8080
+    container_name: enbd_frontend
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    ports:
+      - "5100:5100"
+    depends_on:
+      - api-gateway
+    networks:
+      - enbd_network
+    # volumes:
+    #   - ./frontend/src:/app/src
+    #   - ./frontend/index.html:/app/index.html
+    #   - ./frontend/public:/app/public
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_init_cypher:
+  saved_presentations:
+
+
+networks:
+  enbd_network:
+    driver: bridge

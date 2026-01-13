@@ -1,0 +1,1993 @@
+{
+  "name": "final_rag",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        200
+      ],
+      "id": "948bfbb3-3d37-441f-a58a-5109f388d070",
+      "name": "Extract from File2"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        560
+      ],
+      "id": "99e3a8c8-34d8-4826-9002-242b24679095",
+      "name": "Extract from File3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text.slice(0, 8000) }}",
+        "options": {
+          "systemMessage": "=You are an expert document analysis and metadata extraction AI. Your sole function is to analyze the provided text and metadata to create a complete, structured JSON record, following all formatting rules with absolute precision.\n\nYour response MUST be a single, clean JSON object with the following keys: `subject`, `category_id`, `title`, `author`, `publication_year`, `file_hash`, `file_name`.\n\n**--- INSTRUCTIONS ---**\n\n1.  **Analyze \"Text Content\":**\n    - **Classify** the book's main topic to determine the `subject`. The subject name MUST be from the \"Category ID Mapping\" table below.\n    - **Extract** the `title`, `author`, and `publication_year`. If any of these cannot be found, their value MUST be `null`.\n\n2.  **Format the `title` for Database Use (CRITICAL):**\n    - After extracting the raw title, you MUST sanitize it for use as a database table name by following these rules in order:\n      a. Convert the entire title to UPPERCASE.\n      b. Replace all spaces with a single underscore (`_`).\n      c. Remove any characters that are NOT uppercase letters (A-Z), numbers (0-9), or underscores (`_`).\n\n3.  **Use \"Category ID Mapping\":**\n    - Look up the `subject` you identified and find its corresponding integer ID for the `category_id` field.\n\n4.  **Copy from \"Provided Metadata\":**\n    - **Copy** the `file_hash` and `file_name` values directly.\n\n**--- Category ID Mapping ---**\n1: \"math\"\n2: \"science\"\n3: \"physics\"\n4: \"chemistry\"\n5: \"history\"\n6: \"geology\"\n7: \"general\"\n\n**--- EXAMPLE SCENARIO ---**\n\n**If the raw extracted title is \"Mathematics - I (Engineering)\"**:\n\n**Your final JSON response MUST be:**\n```json\n{\n  \"subject\": \"math\",\n  \"category_id\": 1,\n  \"title\": \"MATHEMATICS_I_ENGINEERING\",\n  \"author\": \"...\",\n  \"publication_year\": ...,\n  \"file_hash\": \"...\",\n  \"file_name\": \"...\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        340
+      ],
+      "id": "4fdbf3b2-e699-4863-a6e2-1499cf4c500f",
+      "name": "Metadata Extractor"
+    },
+    {
+      "parameters": {
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "file",
+        "dataPropertyName": "file"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        900
+      ],
+      "id": "d1f26455-2ee7-4e62-8b3c-fe6ee9f01312",
+      "name": "Hash_book"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $binary.file.mimeType }}",
+                    "rightValue": "application/pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "da12f3eb-4e80-4f6b-ac84-505cb55fa81c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PDF"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "965fcfff-e220-4087-8fdb-c2803344fdee",
+                    "leftValue": "={{ $binary.file.mimeType }}",
+                    "rightValue": "text/plain",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "TEXT"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1240,
+        340
+      ],
+      "id": "0165238e-cba9-4c1f-beb2-477340895007",
+      "name": "Switch3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2100,
+        340
+      ],
+      "id": "1c3d1dc7-5b73-4597-a67b-0c8560610336",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "34f72d74-449f-4d6d-854d-1adfad520d16",
+              "name": "file",
+              "value": "={{ $json.file }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2480,
+        900
+      ],
+      "id": "15a49700-158f-4c0a-bbbc-64da21fad162",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Get the raw text output from the 'Metadata Extractor' AI agent.\nconst rawAiOutput = $input.first().json.output;\n\n// Step 2: Clean the string to remove markdown wrappers and extra whitespace.\nconst cleanedString = rawAiOutput.replace(/```json\\n|```/g, '').trim();\n\n// Step 3: Parse the cleaned string into a real JavaScript object.\n// We use a try...catch block for safety and robust error handling.\nlet parsedMetadata;\ntry {\n  parsedMetadata = JSON.parse(cleanedString);\n} catch (error) {\n  console.error(\"ERROR: Failed to parse JSON from the Metadata Extractor.\", error);\n  console.log(\"Original AI output was:\", rawAiOutput);\n  // Return an object with an error flag to handle this gracefully.\n  return { json: { parsing_error: true, original_output: rawAiOutput } };\n}\n\n// Step 4: Get the original full data packet from the 'Merge1' node.\n// This is the CRUCIAL step. This data packet contains the full 'text' field.\nconst originalInput = $('Merge1').first().json;\n\n\n// Step 5: Combine the original data with the new parsed metadata.\n// The '...' syntax is the 'spread operator'. It's a clean way to merge two objects.\nconst finalOutput = {\n  ...originalInput,    // This brings in the 'text', 'file_hash', 'binary', etc.\n  ...parsedMetadata    // This adds/overwrites with 'subject', 'title', 'author', etc. from the AI.\n};\n\n\n// Step 6: Return the final, unified object. It now contains EVERYTHING.\nreturn {\n  json: finalOutput\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2900,
+        340
+      ],
+      "id": "a23076f5-cebf-4d50-83cd-1b7b3b25fd32",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "mode": "combineBySql",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3180,
+        360
+      ],
+      "id": "a0af57a3-c275-4eb1-9db5-ce5216a5f5d6",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\n\n\nSELECT\n    CASE\n        WHEN COUNT(*) > 0 THEN 0 -- If the count of matching rows is greater than 0, the book is FOUND, so return 0.\n        ELSE 1                   -- Otherwise, the book is NEW, so return 1.\n    END AS book_status\nFROM books\nWHERE file_hash = '{{ $json.file }}'; -- Assuming the hash is in a property called 'file_hash'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3700,
+        360
+      ],
+      "id": "3ce491a9-c89d-44e1-b4a9-0f4d6799ed96",
+      "name": "check_book",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.book_status }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "de3236e6-7624-499a-a38e-036dc1fe64c6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "new_book "
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b807ff74-29f6-4b57-a47a-1a1aecd8ede0",
+                    "leftValue": "={{ $json.book_status }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "duplicated"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        4020,
+        360
+      ],
+      "id": "209e9029-270f-47aa-a52d-9b8993f94cff",
+      "name": "find_book"
+    },
+    {
+      "parameters": {
+        "errorMessage": "the book is already added "
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        4440,
+        540
+      ],
+      "id": "f83af3eb-491f-4510-ada5-5ec9ae0f6e77",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "books",
+          "mode": "list",
+          "cachedResultName": "books"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $('Merge3').item.json.title }}",
+            "file_hash": "={{ $('Merge3').item.json.file }}",
+            "author": "={{ $('Merge3').item.json.author }}",
+            "publication_year": "={{ $('Merge3').item.json.publication_year }}",
+            "file_name": "={{ $('Merge3').item.json.file_name }}",
+            "category_id": "={{ $('Merge3').item.json.category_id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "category_id",
+              "displayName": "category_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author",
+              "displayName": "author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "publication_year",
+              "displayName": "publication_year",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_hash",
+              "displayName": "file_hash",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4260,
+        260
+      ],
+      "id": "af320256-69f7-4077-a76c-fe93ee4f827c",
+      "name": "insert_book",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b8b2ed93-2dbf-40b7-930b-75744f35f5dc",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        700,
+        660
+      ],
+      "id": "8d421eb2-4a09-4661-a064-063f124ea30c",
+      "name": "Webhook",
+      "webhookId": "b8b2ed93-2dbf-40b7-930b-75744f35f5dc"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "generate_questions",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5798ec92-fa8c-44b1-a1f8-fd466c193865"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Generate_questions"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "22046a92-4a31-4ae6-bcae-db020811c7e7",
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "answer_question",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Answer_questions"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d7d31d42-c9fa-4d7a-8851-a52f04b39cb3",
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "generate_lecture",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Generate_lecture"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1180,
+        2160
+      ],
+      "id": "1a699397-9cd3-4534-9cd5-1a27bbff5b62",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=book_title: {{ $json.book_title }}\nmessage: {{ $json.user_message }}",
+        "options": {
+          "systemMessage": "=You are a helpful and knowledgeable research assistant. Your primary goal is to answer the user's question accurately and comprehensively by following a strict, logical process.\n\nYou have access to two tools:\n1. `search_internal_knowledge_base`: A specialized database of textbooks on academic subjects.\n2. `Tavily`: A general-purpose internet search engine.\n\nTo answer the user's question, you MUST follow this reasoning process without deviation:\n\n**STEP 1: INTERNAL SEARCH**\nFirst, you MUST use the `search_internal_knowledge_base` tool. Formulate a concise query based on the user's question.\n\n**STEP 2: CRITICAL EVALUATION**\nAfter the `search_internal_knowledge_base` tool runs, you MUST critically evaluate the text it returns. State your evaluation clearly by answering this question: \"Does this retrieved text contain a direct and sufficient answer to the user's original question?\"\n\n**STEP 3: FORCED DECISION & ACTION**\nBased on your evaluation, you MUST take one of the following actions:\n\n*   **If your evaluation is YES**, then immediately synthesize your final answer based ONLY on that text. Your answer must start with: \"Based on the internal knowledge base: ...\"\n*   **If your evaluation is NO**, you MUST state, \"The internal knowledge base does not contain the answer. I will now search the web.\" and then you MUST immediately use the `Tavily` tool to find the answer. After the `Tavily` tool runs, synthesize the final answer based on its results.\n\n**STEP 4: FINAL ANSWER & CITATION**\nAfter gathering information from either the internal base or Tavily, provide the final, comprehensive answer. Your final answer must end with a citation: `(Source: Internal Knowledge Base)` or `(Source: Web Search)`. \n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2020,
+        2520
+      ],
+      "id": "ad247f4b-2337-4c32-8f90-bae9ea4ba78f",
+      "name": "Answering Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Get the raw text output from the 'Router Agent'.\nconst rawAiOutput = $input.first().json.output;\n\n// Step 2: Clean the string. This is a robust method that removes common markdown\n// wrappers (like ```json) and any extra whitespace from the beginning or end.\nconst cleanedString = rawAiOutput.replace(/```json\\n|```/g, '').trim();\n\n// Step 3: Parse the cleaned string into a real JavaScript object.\n// We use a try...catch block as a safety measure. This prevents the entire\n// workflow from crashing if the AI ever returns a malformed string that isn't valid JSON.\nlet parsedPlan;\ntry {\n  parsedPlan = JSON.parse(cleanedString);\n} catch (error) {\n  console.error(\"ERROR: Failed to parse JSON plan from Router Agent.\", error);\n  console.log(\"Original AI output was:\", rawAiOutput);\n  // Return an object with a default 'error' intent to handle this gracefully.\n  return [{ \n    json: { \n      intent: 'error', \n      subject: 'unknown',\n      error_message: 'Failed to parse AI response'\n    } \n  }];\n}\n\n// Step 4: Return the final, clean JSON object in a single item for the next nodes to use.\nreturn [{\n  json: parsedPlan\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        2160
+      ],
+      "id": "e6182b03-4d6b-47f2-8fe5-253616e94937",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=book_title: {{ $json.body.book_title }}\nuser_message:{{ $json.body.request_text }}",
+        "options": {
+          "systemMessage": "=You are a highly precise AI request parser. Your sole function is to analyze a user's message to determine their primary intent and then package the provided information into a structured JSON object.\n\nYour response MUST be a single, clean JSON object with the following three keys: `intent`, `book_title`, and `user_message`.\n\n**--- YOUR TASK & RULES ---**\n\n1.  **Determine the `intent`:** Analyze the `user_message` text and classify the user's primary goal by following these strict definitions. The `intent` MUST be one of these exact strings:\n    *   **`generate_questions`**: Use this intent if the user explicitly asks to **create, generate, or make questions, a quiz, or an exam.**\n    *   **`generate_lecture`**: Use this intent ONLY if the user explicitly uses the word **\"lecture\" or \"presentation\"**.\n    *   **`answer_question`**: Use this intent for **ALL OTHER requests**. This includes direct questions (what is, who was), requests for explanation (explain, describe, illustrate), requests for summaries, and any general conversation. This is your default category.\n\n2.  **Copy the `book_title`:** You will be given a `book_title` in your input. You MUST copy this value exactly into the `book_title` field of your JSON output.\n\n3.  **Copy the `user_message`:** You will be given the `user_message` in your input. You MUST copy this value exactly into the `user_message` field of your JSON output.\n\n---\n**EXAMPLE SCENARIOS:**\n\n**If the input `user_message` is:** `\"generate 10 hard questions about chapter 1\"`\n**Your `intent` MUST be:** `generate_questions`\n\n**If the input `user_message` is:** `\"what is the first law of thermodynamics?\"`\n**Your `intent` MUST be:** `answer_question`\n\n**If the input `user_message` is:** `\"explain chapter 5\"`\n**Your `intent` MUST be:** `answer_question`\n\n**If the input `user_message` is:** `\"summarize the main points of the introduction\"`\n**Your `intent` MUST be:** `answer_question`\n\n**If the input `user_message` is:** `\"create a lecture on thermodynamics for kids\"`\n**Your `intent` MUST be:** `generate_lecture`\n---\n\nDo not include any other text, explanation, or conversation in your response. Your entire output must be a single, valid JSON object."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        620,
+        2160
+      ],
+      "id": "4605a8d5-48ff-42ba-b1be-0820a0960af9",
+      "name": "Router Agent"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Search in the table named with : {{ $json.book_title }} for the answer for the user.\n\nif the answer is not found search in the web.",
+        "tableName": "={{ $json.book_title }}",
+        "topK": 6,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        2200,
+        2780
+      ],
+      "id": "96f823ea-6541-407d-b23b-e39c35e83fed",
+      "name": "search_internal_knowledge_base",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip"
+            },
+            {
+              "name": "X-Subscription-Token",
+              "value": "BSAHc36C93Z8Q9B-Y3X2RZxyyD07tox"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        2520,
+        2780
+      ],
+      "id": "d39fb409-1fa9-4205-8cef-7b4223db653f",
+      "name": "Tavily"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_message }}",
+        "options": {
+          "systemMessage": "=You are a highly specialized AI that parses user requests for generating educational quizzes. Your sole function is to analyze the provided user message and extract specific parameters into a structured JSON object.\n\nYour response MUST be a single, clean JSON object with the following keys: `topics`, `parameters`.\n\n- **`topics`**: MUST be an array of strings. Extract the specific chapters or significant conceptual nouns the user wants questions about. You MUST ignore generic, non-topical words like \"components\", \"parts\", or \"sections\". A topic should be a searchable concept. If no valid topics are mentioned, return an empty array.If topic/topics is not mentioned choose random topics from the book and output in the JSON object.\n\n- **`parameters`**: MUST be a JSON object containing the following keys: `count`, `difficulty`, and `question_types`.\n    - `count`: An integer representing the total number of questions requested.\n    - `difficulty`: An array of strings containing any specified difficulty levels (e.g., \"easy\", \"medium\", \"hard\").\n    - `question_types`: An array of strings containing any specified question types (e.g., \"multiple_choice_single_answer\", \"true_false\", etc.).\n\n**IMPORTANT:** If the user does not specify a value for `count`, `difficulty`, or `question_types`, you MUST return a default value for that key (e.g., a default `count` of 5, or an empty array `[]` for the others).\n\n\n\n---\n**EXAMPLE SCENARIO 1:**\n\n**If your input (the user_message) is:**\n`\"generate 10 hard T/F questions for Heisenberg's Uncertainty Principle and its Physical Significance\"`\n\n**Your response MUST be:**\n```json\n{\n  \"topics\": [\n    \"Heisenberg's Uncertainty Principle\",\n    \"Physical Significance of Heisenberg's Uncertainty Principle\"\n  ],\n  \"parameters\": {\n    \"count\": 10,\n    \"difficulty\": [\"hard\"],\n    \"question_types\": [\"true_false\"]\n  }\n}\n\n\n\nEXAMPLE SCENARIO 2:\n\nIf your input (the user_message) is:\n\"make a quiz about modern physics and thermodynamics\"\n\nYour response MUST be:{\n  \"topics\": [\n    \"modern physics\",\n    \"thermodynamics\"\n  ],\n  \"parameters\": {\n    \"count\": 5,\n    \"difficulty\": [],\n    \"question_types\": []\n  }\n}\n\n\nDo not include any other text, explanation, or conversation in your response. Your entire output must be a single, valid JSON object."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        1700
+      ],
+      "id": "0aa3a719-af4b-4f41-a6be-f52cfbbc1d42",
+      "name": "Analysis"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Get the raw text output from the 'Analysis' AI agent.\nconst rawAiOutput = $input.first().json.output;\n\n// Step 2: Clean the string to remove markdown wrappers and extra whitespace.\nconst cleanedString = rawAiOutput.replace(/```json\\n|```/g, '').trim();\n\n// Step 3: Parse the cleaned string into a real JavaScript object.\nlet parsedDetails;\ntry {\n  parsedDetails = JSON.parse(cleanedString);\n} catch (error) {\n  console.error(\"ERROR: Failed to parse JSON from Analysis agent.\", error);\n  console.log(\"Original AI output was:\", rawAiOutput);\n  // Return an empty item to stop this path of the workflow gracefully.\n  return [];\n}\n\n// Step 4: Get the original data packet from the node that started this path.\n// This is the output of your 'Switch1' node.\nconst originalData = $('Switch1').first().json;\n\n\n// Step 5: Combine the original data with the new parsed details.\n// This creates one single, complete \"plan\" for the rest of the workflow.\nconst finalPlan = {\n  ...originalData,    // This brings in intent, book_title, user_message\n  ...parsedDetails    // This adds the new topics and parameters objects\n};\n\n\n// Step 6: Return the final, unified plan in a single item.\nreturn [{\n  json: finalPlan\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        1700
+      ],
+      "id": "f6b2b7cd-30c3-4363-a579-f39e3bd8a538",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Use this tool to search the internal knowledge base for all relevant content and existing questions about a specific topic. The input to this tool MUST be a concise search query about a single concept. This is the only way you can retrieve information.",
+        "tableName": "={{ $json.book_title }}",
+        "topK": 8,
+        "includeDocumentMetadata": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        3920,
+        1940
+      ],
+      "id": "d35330f9-af01-41b6-9adf-e669f4ef4261",
+      "name": "knowledge_base_search",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=topics:{{ $json.topics }}.\nbook_title:{{ $json.book_title }}\n\n",
+        "options": {
+          "systemMessage": "=You are a highly efficient AI Research Assistant. Your sole purpose is to retrieve all relevant information about a list of topics from a knowledge base using the provided search tool.\n\n**Your response MUST ONLY be the combined text content you have retrieved.**\n\n**--- YOUR TASK & RULES ---**\n\n1.  **Iterate Through Topics:** You will be given a list of one or more topics to research. You MUST process each topic individually.\n\n2.  **Execute Search:** For EACH topic in the list, you MUST use the `knowledge_base_search` tool to find all relevant content and existing questions. Use the topic name itself as the search query for the tool.\n\n3.  **Consolidate All Results:** After you have used the tool for all the topics, you MUST combine all the text excerpts you have found into a single, large block of text. Separate the content from each topic with a clear divider like \"---\".\n\n4.  **Final Output:** Your final response MUST ONLY be this single, consolidated block of text. Do not add any summaries, explanations, conversational text, or introductions like \"Here is the content you requested:\".\n\nYour entire job is to fetch and provide the raw context. Another agent will handle the question generation."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        3820,
+        1680
+      ],
+      "id": "98c407a9-2c99-41f8-a8e0-5fd1d7f0a11e",
+      "name": "Research Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=text:{{ $json.output }},\ncount:{{ $('Code1').item.json.parameters.count }},\ndifficulty:{{ $('Code1').item.json.parameters.difficulty }}\nquestion_types:{{ $('Code1').item.json.parameters.question_types }}",
+        "options": {
+          "systemMessage": "=You are a master educator and professional exam author. You are a creative, autonomous agent. Your mission is to generate a precise number of new questions based ONLY on a provided \"Research Packet,\" adhering to all user-defined constraints. When constraints are missing, you MUST use your expert judgment to create a high-quality, balanced, and varied set of questions.\n\nYour response MUST be a single, clean JSON object. Do not add any extra text or explanations.\n\nThe master format for your JSON output is:\n{\n  \"chapter\": \"The Chapter Provided\",\n  \"questions_generated\": [\n    {\n      \"difficulty\": \"easy, medium, or hard\",\n      \"type\": \"A type from the master guide\",\n      \"question_text\": \"The full text of the question...\",\n      \"options\": [\"An array for choices/items, or an empty array [] for others\"],\n      \"answer\": \"The correct answer, formatted according to the type.\"\n    }\n  ]\n}\n\n**--- MASTER GUIDE TO QUESTION TYPES & FORMATS ---**\nThis is the definitive list of question types you can generate. You must recall and follow the specific JSON formatting rules for each type from your internal knowledge.\n1.  `multiple_choice_single_answer`\n2.  `multiple_choice_multiple_answer`\n3.  `true_false`\n4.  `open_ended_question`\n5.  `fill_in_the_blanks`\n6.  `drag_and_drop_text`\n7.  `matching`\n8.  `ordering`\n\n---\n**YOUR ASSIGNMENT DETAILS:**\n- Chapter: {{ $('Code1').item.json.topics }}\n- Number of Questions to Generate: {{ $('Code1').item.json.parameters.count }}\n- Requested Difficulties: {{ $('Code1').item.json.parameters.difficulty }}\n- Requested Question Types: {{ $('Code1').item.json.parameters.question_types }}\n---\n\n**--- AUTONOMOUS BEHAVIOR PROTOCOLS (CRITICAL) ---**\n\n1.  **If the `Requested Number of Questions` is missing, empty, or null:** You MUST default to generating **5** questions.\n2.  **If the `Requested Difficulties` array is EMPTY:** You MUST intelligently distribute the total number of questions across a balanced mix of `easy`, `medium`, and `hard` difficulties. Do not make them all one difficulty.\n3.  **If the `Requested Question Types` array is EMPTY:** You MUST intelligently generate a varied and engaging mix of question types from the `MASTER GUIDE`. A good mix should include `multiple_choice_single_answer`, `true_false`, and `open_ended_question`.\n4.  **If ALL constraints are empty:** You MUST follow all protocols above, creating a balanced and varied quiz of 5 questions.\n5.  **Source of Truth:** You MUST base all questions and answers strictly on the provided \"Research Packet\" (the user message). Do not invent information.\n6.  **Formatting:** You MUST adhere to the JSON format and the rules in the `MASTER GUIDE` with 100% precision.\n\nBegin your work now."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        4280,
+        1680
+      ],
+      "id": "9556a956-d9f1-48ab-9c3a-a9e7c7d48504",
+      "name": "Question_Author_Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all incoming items as an array\nconst allItems = $input.all();\n\n// Use .map() to loop over each item and process it\nconst results = allItems.map(item => {\n  const rawOutput = item.json.output;\n  const cleanedString = rawOutput.replace(/```json\\n|```/g, '').trim();\n  \n  try {\n    const parsedJson = JSON.parse(cleanedString);\n    // Return the result for this specific item in the loop\n    return { json: parsedJson };\n  } catch (error) {\n    console.error(\"Failed to parse JSON for one of the items.\", error);\n    return null; // Return null for failed items\n  }\n});\n\n// Filter out any items that failed to parse and return the final array\nreturn results.filter(item => item !== null);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4600,
+        1680
+      ],
+      "id": "19101365-1be9-4e67-a4ba-4276aa7b82d1",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        4880,
+        1680
+      ],
+      "id": "1399227c-39e5-4074-878c-10b67c25123b",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data }}",
+        "options": {
+          "systemMessage": "=You are a data formatting specialist. You will be given a JSON array containing structured data for exam questions. Your sole and only task is to reformat this data into a clean, human-readable list using Markdown, following the rules below with absolute precision.\n\nFORMATTING RULES:\n\n    Loop through each question object in the provided JSON data.\n\n    For each question, you MUST create a header that includes a question number, its difficulty, and its type. Format it like this: **Question [Number]: ([difficulty], [type])**\n\n    Display the question_text on a new line.\n\n    If the options array exists and is not empty, list each option on a new line, preceded by a hyphen.\n\n    Display the answer on a new line, preceded by **Answer:**.\n\n    Place a --- separator between each complete question block for readability.\n\nIMPORTANT: Do NOT summarize, analyze, change, or add any conversational text, introductions, or conclusions. This is a pure formatting task. Your entire output must be the formatted list of questions."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        5140,
+        1680
+      ],
+      "id": "bc957dc4-c8f5-4073-ab07-5409515bbf98",
+      "name": "format_questions"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        4960,
+        560
+      ],
+      "id": "f6a9f313-e7c1-4820-a670-75a5f763b66f",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "={{ $('insert_book').item.json.title }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        4800,
+        240
+      ],
+      "id": "298f82e1-7fb4-4c20-8b23-bebd20a5e6e8",
+      "name": "insert_books",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "76033015-6ba3-42e5-bbdd-de99f2077213",
+              "name": "text",
+              "value": "={{ $('Merge3').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4580,
+        240
+      ],
+      "id": "b707fa59-436e-4591-9617-4e5984989368",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "35c5ed82-870e-490d-9d54-3a01d772d78e",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        360,
+        2160
+      ],
+      "id": "8db75c00-0ace-4e20-a2f9-4330d832b8eb",
+      "name": "Webhook1",
+      "webhookId": "35c5ed82-870e-490d-9d54-3a01d772d78e"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        560
+      ],
+      "id": "d92d13b4-3125-4202-a6e3-6f013ebefc04",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        540,
+        2420
+      ],
+      "id": "5273332c-5803-4cc5-a046-6565ee6564c2",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        2740
+      ],
+      "id": "d959ad8a-c4c3-4598-a749-8637ffbefb80",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS books (\n    id SERIAL PRIMARY KEY,\n    category_id INT NOT NULL,\n    title VARCHAR(255) NOT NULL,\n    author VARCHAR(255),\n    publication_year INT,\n    file_hash VARCHAR(255) NOT NULL UNIQUE,\n    file_name VARCHAR(255),\n\n    CONSTRAINT fk_category\n        FOREIGN KEY (category_id)\n        REFERENCES category(id)\n);\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3460,
+        360
+      ],
+      "id": "96bf2d3f-6fc2-4d71-abaa-529118a0f072",
+      "name": "Add Book Table",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Your Job is to retreive",
+        "tableName": "{{ $json.book_title }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        2160,
+        1900
+      ],
+      "id": "f944e973-35b7-4c11-80f8-056ff26b5c56",
+      "name": "Postgres PGVector Store",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3760,
+        1920
+      ],
+      "id": "2460b988-1cff-4dce-bfd0-b6ec2ad7f6f3",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1860,
+        1940
+      ],
+      "id": "a2528762-976e-43d5-9885-d18b4b6da9f9",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b0d26a92-6d33-4d85-b328-9c4f0cd62a52",
+              "leftValue": "={{ $json.topics }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2600,
+        1700
+      ],
+      "id": "86ca2679-5f34-4d35-9519-1aa0f17e29a2",
+      "name": "Is Topics Specified"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2960,
+        2000
+      ],
+      "id": "51cb285e-6c94-4022-b06f-49a34e84899c",
+      "name": "Google Gemini Chat Model7",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Use this tool to search the internal knowledge base for all relevant content and existing questions about a specific topic. The input to this tool MUST be a concise search query about a single concept. This is the only way you can retrieve information.",
+        "tableName": "={{ $json.book_title }}",
+        "topK": 8,
+        "includeDocumentMetadata": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        3160,
+        2000
+      ],
+      "id": "ede9389d-ea9f-4cc5-bd34-571da2446591",
+      "name": "knowledge_base_search1",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/embedding-001"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3260,
+        2200
+      ],
+      "id": "95f18acd-e67e-4997-bd85-2a747306e0c8",
+      "name": "Embeddings Google Gemini4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Analysis').item.json.output }}",
+        "options": {
+          "systemMessage": "=You are an Expert Retreiver Agent, Your sole Task is to retrieve Multiple Topic Names fromthe book you have and put it inside the \"Topic\" array\n\nyou will reciecve a JSON file with empty \"topics\" paramter. Your Job is to fill this empty array with topics from the book yu have\n\n**Output Format**\nThe output MUST be the same JSON file except the topics paramter put in it topics from the book you retreived from."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        3020,
+        1780
+      ],
+      "id": "dc35eb84-a653-4221-9194-e3e0c0c12b84",
+      "name": "Topics Extraction"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Get the raw text output from the 'Analysis' AI agent.\nconst rawAiOutput = $input.first().json.output;\n\n// Step 2: Clean the string to remove markdown wrappers and extra whitespace.\nconst cleanedString = rawAiOutput.replace(/```json\\n|```/g, '').trim();\n\n// Step 3: Parse the cleaned string into a real JavaScript object.\nlet parsedDetails;\ntry {\n  parsedDetails = JSON.parse(cleanedString);\n} catch (error) {\n  console.error(\"ERROR: Failed to parse JSON from Analysis agent.\", error);\n  console.log(\"Original AI output was:\", rawAiOutput);\n  // Return an empty item to stop this path of the workflow gracefully.\n  return [];\n}\n\n// Step 4: Get the original data packet from the node that started this path.\n// This is the output of your 'Switch1' node.\nconst originalData = $('Switch1').first().json;\n\n\n// Step 5: Combine the original data with the new parsed details.\n// This creates one single, complete \"plan\" for the rest of the workflow.\nconst finalPlan = {\n  ...originalData,    // This brings in intent, book_title, user_message\n  ...parsedDetails    // This adds the new topics and parameters objects\n};\n\n\n// Step 6: Return the final, unified plan in a single item.\nreturn [{\n  json: finalPlan\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3460,
+        1780
+      ],
+      "id": "ef6a78d0-dede-403d-bb4b-0d8c54af4abe",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        3520
+      ],
+      "id": "4d1c53c4-e205-48fc-81f7-fe891788730b",
+      "name": "Google Gemini Chat Model8",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Search in the table named with : {{ $json.book_title }} for the answer for the user.\n\nif the answer is not found search in the web.",
+        "tableName": "={{ $json.book_title }}",
+        "topK": 6,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        2180,
+        3560
+      ],
+      "id": "5f7b1fe6-1fa0-4749-bd8b-8484bb1d5b87",
+      "name": "knowledge_retriever_tool",
+      "credentials": {
+        "postgres": {
+          "id": "87RwuhroSMD2Egqi",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=book_title: {{ $json.book_title }}\nmessage: {{ $json.user_message }}",
+        "options": {
+          "systemMessage": "=You are Professor A.I., a specialized AI agent designed to generate clear, engaging, and well-structured lectures. Your entire knowledge base comes from a book that has been embedded in a vector database, which you can access exclusively through your knowledge_retriever_tool.\n\nYour primary goal is to act as an expert educator, transforming raw information from the book into a high-quality lecture tailored to the user's request.\n\nYour Core Workflow\n\nYou must follow this logic for every request:\n\nParse the Request: Carefully analyze the user's message to identify two key parameters: the topic and the audience.\n\nDetermine the Topic:\n\nIf a topic is specified, use it.\n\nIf no topic is specified, you must choose one yourself by following the \"How to Handle Topics\" procedure below.\n\nDetermine the Audience:\n\nIf an audience is specified (e.g., \"kids,\" \"experts,\" \"beginners\"), adapt your tone, language, and examples accordingly.\n\nIf no audience is specified, assume the default audience: university-level students who are intelligent but may be new to the subject.\n\nRetrieve Knowledge: Use the knowledge_retriever_tool with the determined topic as your query to fetch all relevant information chunks from the book.\n\nSynthesize and Structure: Weave the retrieved text chunks into a coherent and structured lecture. Do not just list the chunks. You must synthesize them, create smooth transitions, and organize the content logically under headings.\n\nFormat and Deliver: Present the final lecture to the user, ensuring it follows the required structure.\n\nTool Specification\n\nYou have access to only one tool:\n\nTool Name: knowledge_retriever_tool\n\nPurpose: Searches the embedded book for text chunks semantically related to a query.\n\nInput: A JSON object with a single key, query. Example: {\"query\": \"Heisenberg's Uncertainty Principle\"}\n\nOutput: An array of text strings, each being a relevant chunk of information from the book.\n\nHow to Handle Topics\n\nScenario A: The user provides a topic.\n\nExample: \"Generate a lecture on thermodynamics.\"\n\nAction: Use the specified topic (\"thermodynamics\") directly as the query for the knowledge_retriever_tool.\n\nScenario B: The user does NOT provide a topic.\n\nExample: \"Generate a lecture for me.\" or \"Can you make a lecture for kids?\"\n\nAction (Two-Step Process):\n\nDiscover a Topic: First, call the knowledge_retriever_tool with a very broad, generic query like \"table of contents\" or \"summary of main ideas\" to get a diverse sample of the book's content.\n\nSelect and Announce: From the results of that first call, identify one clear and interesting topic. Begin your response by telling the user which topic you have chosen. For example: \"Of course! I've selected the topic of 'Quantum Tunneling' to create a lecture for you.\"\n\nRetrieve Lecture Content: Now, perform a second call to the knowledge_retriever_tool using your selected topic (e.g., \"Quantum Tunneling\") as the query to get the detailed information needed for the lecture itself.\n\nHow to Adapt to the Audience\n\nFor Kids: Use simple language, short sentences, and relatable analogies. (e.g., \"Imagine an atom is like a tiny solar system,\" \"DNA is like a recipe book for your body.\") Avoid jargon.\n\nFor Experts: Use precise, technical terminology. You can assume foundational knowledge and focus on nuance, complexities, or advanced implications.\n\nFor a General Audience / Beginners: Define all key terms clearly. Use a mix of straightforward explanation and some simple analogies. Build concepts step-by-step.\n\nDefault (University Students): This is your standard mode. Assume the audience is capable of understanding complex ideas but needs clear, structured explanations. Define terms, but move at a reasonable academic pace.\n\nRequired Lecture Structure and Formatting\n\nYour final output MUST be a well-formatted lecture with the following components:\n\nLecture Title: A clear and relevant title.\n\nExample: # Lecture: An Introduction to Thermodynamics\n\nIntroduction:\n\nStart with a hook to grab the audience's interest.\n\nBriefly state the main concepts that will be covered in the lecture.\n\nBody with Headings:\n\nBreak the main content into logical sections.\n\nEach section MUST have a clear heading using Markdown (##).\n\nExample: ## The First Law of Thermodynamics\n\nExample: ## Entropy and the Second Law\n\nConclusion:\n\nSummarize the most important takeaways from the lecture.\n\nEnd with a concluding thought or a bridge to potential future topics.\n\nStrict Rules:\n\nNEVER invent information or use knowledge outside of what the knowledge_retriever_tool provides. Your entire lecture must be based on the retrieved content.\n\nNEVER mention your tools or your internal processes unless you are announcing a chosen topic as instructed above.\n\nIf the tool returns no relevant information for a given topic, inform the user politely. Example: \"I'm sorry, but I couldn't find sufficient information on that specific topic in my knowledge base to generate a full lecture.\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        3300
+      ],
+      "id": "2aeb5070-2b9e-416a-8e74-3154aa3248cc",
+      "name": "Lecture Generator Agent"
+    },
+    {
+      "parameters": {
+        "content": "## Embedding and Storing Books \n",
+        "height": 1376,
+        "width": 5440
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        160,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "ab502aff-8710-4bdb-ba78-a0fe8f4a0c35",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Answering Questions \n",
+        "height": 688,
+        "width": 976,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1660,
+        2420
+      ],
+      "typeVersion": 1,
+      "id": "0aa0b588-6b73-470a-bb12-941cffcbaf44",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Lecture Generation \n",
+        "height": 752,
+        "width": 976,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1660,
+        3240
+      ],
+      "typeVersion": 1,
+      "id": "de0047d9-a042-4c11-a985-6fc0fe6d290d",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Question Generation",
+        "height": 752,
+        "width": 4048,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1660,
+        1640
+      ],
+      "typeVersion": 1,
+      "id": "2cb94ca7-d8ef-40ac-bfd4-cd7c4c2f4b73",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Use Case Analyzer \n",
+        "height": 752,
+        "width": 1040,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        280,
+        1900
+      ],
+      "typeVersion": 1,
+      "id": "579c9a87-6848-4100-a31d-c76190e9bb25",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "modelName": "models/embedding-001"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3900,
+        2140
+      ],
+      "id": "a4f217ef-f6f8-4ce9-9cb4-b01e2a22c391",
+      "name": "Embeddings Google Gemini2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gaMSjW4dfbAXnpjF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        2260,
+        2120
+      ],
+      "id": "f0ef424c-2575-4293-9650-138b8ca5cd85",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "KyQ84z6xMqQ0FcEP",
+          "name": "Ollama windows1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        4300,
+        1920
+      ],
+      "id": "58e5d5fd-7e60-42d1-a973-ef72736ee134",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "20gzHLKBJeh9YS4H",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        4740,
+        560
+      ],
+      "id": "6ba396db-6159-4f1a-a34d-b38e385ae4d6",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "KyQ84z6xMqQ0FcEP",
+          "name": "Ollama windows1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        2300,
+        3000
+      ],
+      "id": "77b42f70-f918-452c-8027-f7192cc19b64",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "KyQ84z6xMqQ0FcEP",
+          "name": "Ollama windows1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        3780
+      ],
+      "id": "36fd9a63-98ed-4e9d-aea4-f89d7080ae05",
+      "name": "Embeddings Ollama3",
+      "credentials": {
+        "ollamaApi": {
+          "id": "KyQ84z6xMqQ0FcEP",
+          "name": "Ollama windows1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        5040,
+        1900
+      ],
+      "id": "e6ea4c9f-2f01-47f6-92de-c2852851b132",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "20gzHLKBJeh9YS4H",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract from File2": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File3": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Metadata Extractor": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash_book": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch3": {
+      "main": [
+        [
+          {
+            "node": "Extract from File2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Metadata Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Add Book Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_book": {
+      "main": [
+        [
+          {
+            "node": "find_book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find_book": {
+      "main": [
+        [
+          {
+            "node": "insert_book",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert_book": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Hash_book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Answering Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lecture Generator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_internal_knowledge_base": {
+      "ai_tool": [
+        [
+          {
+            "node": "Answering Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "Answering Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analysis": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Is Topics Specified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "knowledge_base_search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Agent": {
+      "main": [
+        [
+          {
+            "node": "Question_Author_Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question_Author_Agent": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "format_questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "insert_books",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "insert_books",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Router Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Metadata Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Router Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answering Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Book Table": {
+      "main": [
+        [
+          {
+            "node": "check_book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres PGVector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Analysis",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Topics Specified": {
+      "main": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Topics Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Topics Extraction",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "knowledge_base_search1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Topics Extraction",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini4": {
+      "ai_embedding": [
+        [
+          {
+            "node": "knowledge_base_search1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Topics Extraction": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Lecture Generator Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "knowledge_retriever_tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Lecture Generator Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "knowledge_base_search",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question_Author_Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "insert_books",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "search_internal_knowledge_base",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "knowledge_retriever_tool",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "format_questions",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1048de28-1406-4136-9448-501198902dc7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "eabc98417cb2cb9057408f76c15f4e1c53d4db628282e0dd111472938fa43869"
+  },
+  "id": "4XYOmAYOTWedVSI7",
+  "tags": []
+}
