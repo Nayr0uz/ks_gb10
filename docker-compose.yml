@@ -150,21 +150,20 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        - VITE_API_URL=http://localhost:8080
     container_name: enbd_frontend
     environment:
       - VITE_API_URL=http://localhost:8080
     ports:
       - "5100:5100"
+    # command: npm run dev -- --host 0.0.0.0 --port 5100
     depends_on:
       - api-gateway
     networks:
       - enbd_network
-    # volumes:
-    #   - ./frontend/src:/app/src
-    #   - ./frontend/index.html:/app/index.html
-    #   - ./frontend/public:/app/public
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/public:/app/public
 
 volumes:
   neo4j_data:

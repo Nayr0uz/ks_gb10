@@ -80,8 +80,8 @@ class ChatService:
 
         # Initialize LangChain components
         self.embeddings = OpenAIEmbeddings(
-            model=os.getenv("OLLAMA_EMBEDDING_MODEL", "Qwen3-Embedding-4B-Q8_0"),
-            base_url=get_clean_v1_url("OLLAMA_BASE_URL", "http://172.24.77.77:8090"),
+            model=os.getenv("OLLAMA_EMBEDDING_MODEL", "Qwen3-Embedding-4B-Q8_0"), #not ollama bs lazy to change the name
+            base_url=get_clean_v1_url("OLLAMA_BASE_URL", "http://host.docker.internal:8090"),
             api_key="sk-no-key-required")
         
         # Check backend type - default to 'ollama' but allow 'openai' for llama.cpp/vLLM
@@ -92,14 +92,14 @@ class ChatService:
             self.llm = ChatOpenAI(
                 model=os.getenv("CHAT_MODEL_NAME", "gpt-oss-120b"),
                 temperature=float(os.getenv("CHAT_MODEL_TEMPERATURE", "0.7")),
-                base_url=get_clean_v1_url("LLM_OPENAI_BASE_URL", "http://172.24.77.77:8089"),
+                base_url=get_clean_v1_url("LLM_OPENAI_BASE_URL", "http://host.docker.internal:8089"),
                 api_key="sk-no-key-required",
                 streaming=True
             )
             logger.info(f"Initialized ChatOpenAI at {self.llm.openai_api_base}")
         else:
             # Fallback for native Ollama (Stripping /v1 if present)
-            raw_url = os.getenv("OLLAMA_BASE_URL", "http://172.24.77.77:8090")
+            raw_url = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:8090")
             clean_ollama_url = raw_url.replace("/v1", "").rstrip("/")
             self.llm = ChatOllama(
                 model=os.getenv("CHAT_MODEL_NAME", "gpt-oss-120b"),

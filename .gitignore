@@ -1,7 +1,5 @@
 # Environment variables and secrets
-.env
-.env.local
-.env.*.local
+# .env files are now included in the repository
 
 # Python
 __pycache__/

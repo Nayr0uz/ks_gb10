@@ -72,7 +72,7 @@ class IngestionService:
 
         # --- 1. INITIALIZE EMBEDDINGS ---
         self.embeddings = OpenAIEmbeddings(
-            model=os.getenv("OLLAMA_EMBEDDING_MODEL", "Qwen3-Embedding-4B-Q8_0"),
+            model=os.getenv("OLLAMA_EMBEDDING_MODEL"),
             # Uses 8090 as per your .env
             base_url=get_openai_url("OLLAMA_BASE_URL", 8090),
             api_key="sk-no-key-required"
@@ -80,13 +80,13 @@ class IngestionService:
         logger.info(f"Initialized Embeddings with base_url: {self.embeddings.openai_api_base}")
 
         # --- 2. INITIALIZE LLM ---
-        backend_type = os.getenv("LLM_BACKEND_TYPE", "openai").lower()
+        backend_type = os.getenv("LLM_BACKEND_TYPE").lower()
         
         if backend_type == "openai":
             from langchain_openai import ChatOpenAI
             self.llm = ChatOpenAI(
-                model=os.getenv("INGESTION_MODEL_NAME", "gpt-oss-120b"),
-                temperature=float(os.getenv("INGESTION_MODEL_TEMPERATURE", "0")),
+                model=os.getenv("INGESTION_MODEL_NAME"),
+                temperature=float(os.getenv("INGESTION_MODEL_TEMPERATURE")),
                 base_url=get_openai_url("LLM_OPENAI_BASE_URL", 8089),
                 api_key="sk-no-key-required"
             )
@@ -95,10 +95,10 @@ class IngestionService:
         else:
             # Only if you switch to a native Ollama instance
             # ChatOllama appends /api/chat, so we strip /v1 if present
-            ollama_base = os.getenv("OLLAMA_BASE_URL", "http://172.24.77.77:8090")
+            ollama_base = os.getenv("OLLAMA_BASE_URL")
             self.llm = ChatOllama(
-                model=os.getenv("INGESTION_MODEL_NAME", "gpt-oss-120b"),
-                temperature=float(os.getenv("INGESTION_MODEL_TEMPERATURE", "0")),
+                model=os.getenv("INGESTION_MODEL_NAME"),
+                temperature=float(os.getenv("INGESTION_MODEL_TEMPERATURE")),
                 base_url=ollama_base.replace("/v1", "").rstrip("/")
             )
             logger.info(f"Initialized ChatOllama at {self.llm.base_url}")

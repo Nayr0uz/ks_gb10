@@ -83,10 +83,10 @@ app.add_middleware(
 )
 
 # Service URLs
-INGESTION_SERVICE_URL = os.getenv("INGESTION_SERVICE_URL", "http://ingestion-service:8000")
-CHAT_SERVICE_URL = os.getenv("CHAT_SERVICE_URL", "http://chat-service:8001")
-AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8002")
-PRESENTATION_SERVICE_URL = os.getenv("PRESENTATION_SERVICE_URL", "http://presentation-service:8003")
+INGESTION_SERVICE_URL = os.getenv("INGESTION_SERVICE_URL")
+CHAT_SERVICE_URL = os.getenv("CHAT_SERVICE_URL")
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
+PRESENTATION_SERVICE_URL = os.getenv("PRESENTATION_SERVICE_URL")
 
 
 # --- Rate limit dependency ---

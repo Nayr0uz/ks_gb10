@@ -779,9 +779,9 @@ async def generate_presentation_content_streaming(
     db_manager = get_database()
     
     # Initialize Unified LLM client
-    ollama_client = UnifiedLLMClient(host=os.getenv("OLLAMA_BASE_URL", "http://llm-inference:8080"))
-    model_name = os.getenv("PRESENTATION_MODEL_NAME", "gpt-oss-120b")
-    
+    ollama_client = UnifiedLLMClient(host=os.getenv("OLLAMA_BASE_URL"))
+    model_name = os.getenv("CHAT_MODEL_NAME", "gpt-oss-120b")
+
     # Fetch presentation config
     row = await db_manager.fetch_one(
         """MATCH (p:Presentation {id: $id}) 
